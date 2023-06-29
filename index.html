@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subway Three</title>
+</head>
+
+<body>
+  <style>
+    body {
+      margin: 0;
+      background-color: #0c4a6e;
+    }
+  </style>
+
+  <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+
+  <script type="importmap">
+        {
+          "imports": {
+            "three": "https://unpkg.com/three@0.150.1/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.150.1/examples/jsm/"
+          }
+        }
+      </script>
+
+  <script type="module">
+    import * as THREE from 'three'
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+
+    const cena = new THREE.Scene()
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    )
+    const renderer = new THREE.WebGLRenderer({
+      alpha: true,
+    })
+
+    camera.position.set(3, 2, 5)
+    renderer.shadowMap.enabled = true;
+    renderer.setSize(window.innerWidth, window.innerHeight)
+    document.body.appendChild(renderer.domElement)
+    const controls = new OrbitControls(camera, renderer.domElement)
+
+    class Caixa extends THREE.Mesh {
+      constructor({
+        width,
+        height,
+        profundidade,
+        cor = '#00ff00',
+        velocidade = {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        position = {
+          x: 0,
+          y: 0,
+          z: 0
+        },
+        AceleracaoZ = false
+      }) {
+        super(
+          new THREE.BoxGeometry(width, height, profundidade),
+          new THREE.MeshStandardMaterial({ color: cor }))
+
+        this.width = width
+        this.height = height
+        this.profundidade = profundidade
+
+        this.position.set(position.x, position.y, position.z)
+
+        this.right = this.position.x + this.width / 2
+        this.left = this.position.x - this.width / 2
+
+        this.bottom = this.position.y - this.height / 2
+        this.top = this.position.y + this.height / 2;
+
+        this.velocidade = velocidade
+        this.ForcaGravidade = -0.05
+
+        this.AceleracaoZ = AceleracaoZ
+      }
+      updadeSides() {
+        this.right = this.position.x + this.width / 2
+        this.left = this.position.x - this.width / 2
+
+        this.bottom = this.position.y - this.height / 2;
+        this.top = this.position.y + this.height / 2;
+
+        this.frente = this.position.z + this.profundidade / 2
+        this.tras = this.position.z - this.profundidade / 2
+      }
+
+      update(chao) {
+        this.updadeSides()
+
+        if (this.AceleracaoZ) this.velocidade.z += 0.008
+        this.position.x += this.velocidade.x
+        this.position.z += this.velocidade.z
+        this.gravidade();
+      }
+
+
+      gravidade() {
+        this.velocidade.y += this.ForcaGravidade;
+
+        if (detectorColisao(this, chao)) {
+          this.velocidade.y *= 0.7;
+          this.velocidade.y = -this.velocidade.y;
+        } else this.position.y += this.velocidade.y
+      }
+    }
+
+    function detectorColisao(obj1, obj2) {
+      const ColisaoZ = obj1.frente >= obj2.tras && obj1.tras <= obj2.frente
+      const ColisaoY =
+        obj1.bottom + obj1.velocidade.y <= obj2.top && obj1.top >= obj2.bottom
+      const ColisaoX = obj1.right >= obj2.left && obj1.left <= obj2.right
+
+      return ColisaoZ && ColisaoX & ColisaoY
+    }
+
+    const cube = new Caixa({
+      width: 1, height: 1, profundidade: 1, velocidade: {
+        x: 0, y: -0.05, z: 0
+      }
+    });
+    cube.castShadow = true;
+    cena.add(cube)
+
+    const chao = new Caixa({
+      width: 10,
+      height: 0.5,
+      profundidade: 30,
+      cor: '#0369af',
+      position: {
+        x: 0,
+        y: -2,
+        z: 0
+      }
+    })
+
+    chao.receiveShadow = true;
+    chao.position.y = -2
+    cena.add(chao)
+
+    const luz = new THREE.DirectionalLight(0xffffff, 1);
+    luz.position.y = 3
+    luz.position.z = 1
+    luz.castShadow = true;
+    cena.add(luz)
+
+    const luzAmbiente = new THREE.AmbientLight(0xffffff, 0.3);
+    cena.add(luzAmbiente)
+
+    camera.position.z = 5
+
+    const keys = {
+      a: {
+        clicada: false
+      },
+      d: {
+        clicada: false
+      },
+      s: {
+        clicada: false
+      },
+      w: {
+        clicada: false
+      }
+    }
+
+    let pulando = false;
+
+    let ultimaVezPulou = 0;
+
+    window.addEventListener('keydown', (event) => {
+      switch (event.code) {
+        case 'KeyA':
+          keys.a.clicada = true;
+          break;
+        case 'KeyD':
+          keys.d.clicada = true;
+          break;
+        case 'KeyS':
+          keys.s.clicada = true;
+          break;
+        case 'KeyW':
+          keys.w.clicada = true;
+          break;
+        case 'Space':
+          const agora = new Date().getTime();
+          if (!pulando && agora - ultimaVezPulou >= 1750) {
+            cube.velocidade.y = 0.41;
+            pulando = true
+            ultimaVezPulou = agora;
+          }
+          break;
+      }
+    });
+
+
+
+    window.addEventListener('keyup', (event) => {
+      switch (event.code) {
+        case 'KeyA':
+          keys.a.clicada = false
+          break
+        case 'KeyD':
+          keys.d.clicada = false
+          break
+        case 'KeyS':
+          keys.s.clicada = false
+          break
+        case 'KeyW':
+          keys.w.clicada = false
+          break
+        case 'Space':
+          pulando = false
+          break
+      }
+    })
+
+
+
+    const inimigos = []
+
+    let frames = 0
+    let spawRate = 50
+    function animate() {
+      const idAnimacao = requestAnimationFrame(animate)
+      renderer.render(cena, camera);
+      chao.updadeSides();
+      cube.update(chao);
+      inimigos.forEach(inimigo => {
+        inimigo.update()
+      })
+
+      //MOVIMENTAÇÃO DO CUBO
+      cube.velocidade.x = 0
+      cube.velocidade.z = 0
+      if (keys.a.clicada) cube.velocidade.x = -0.13
+      else if (keys.d.clicada) cube.velocidade.x = 0.13
+
+      if (keys.s.clicada) cube.velocidade.z = 0.13
+      else if (keys.w.clicada) cube.velocidade.z = -0.13
+
+      inimigos.forEach(inimigo => {
+        if (detectorColisao(cube, inimigo)) {
+          cancelAnimationFrame(idAnimacao);
+        }
+      })
+
+      frames++
+
+      if (frames % spawRate === 0) {
+        if (spawRate > 0.5) spawRate -= 0.5
+
+        const inimigo = new Caixa({
+          width: 1,
+          height: 1,
+          profundidade: 1,
+          position: {
+            x: (Math.random() - 0.5) * 10,
+            y: 0,
+            z: -15
+          },
+          velocidade: {
+            x: 0,
+            y: 0,
+            z: 0.009
+          },
+          cor: 'red',
+          AceleracaoZ: true
+        });
+        inimigo.castShadow = true;
+        cena.add(inimigo)
+
+        inimigos.push(inimigo)
+      }
+
+    }
+    animate();
+  </script>
+</body>
+
+</html>
