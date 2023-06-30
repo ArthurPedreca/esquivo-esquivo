@@ -243,11 +243,11 @@
       //MOVIMENTAÇÃO DO CUBO
       cube.velocidade.x = 0
       cube.velocidade.z = 0
-      if (keys.a.clicada) cube.velocidade.x = -0.5
-      else if (keys.d.clicada) cube.velocidade.x = 0.5
+      if (keys.a.clicada) cube.velocidade.x = -0.09
+      else if (keys.d.clicada) cube.velocidade.x = 0.09
 
-      if (keys.s.clicada) cube.velocidade.z = 0.5
-      else if (keys.w.clicada) cube.velocidade.z = -0.5
+      if (keys.s.clicada) cube.velocidade.z = 0.09
+      else if (keys.w.clicada) cube.velocidade.z = -0.09
 
       inimigos.forEach(inimigo => {
         if (detectorColisao(cube, inimigo)) {
