@@ -146,6 +146,18 @@
       }
     })
 
+    let score = 0;
+    const scoreElement = document.createElement('div');
+    scoreElement.style.color = 'white';
+    scoreElement.style.position = 'fixed';
+    scoreElement.style.top = '20px';
+    scoreElement.style.left = '20px';
+    document.body.appendChild(scoreElement);
+
+    function updateScore() {
+        scoreElement.innerText = 'Score: ' + score;
+    }
+
     chao.receiveShadow = true;
     cena.add(chao)
 
@@ -255,6 +267,12 @@
       })
 
       frames++
+
+      if (frames % 60 === 0) {
+            score += 1;
+            updateScore();
+        }
+
 
       if (frames % spawRate === 0) {
         if (spawRate > 20) spawRate -= 20
