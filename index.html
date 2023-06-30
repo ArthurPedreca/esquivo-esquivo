@@ -193,8 +193,8 @@
           break;
         case 'Space':
           const agora = new Date().getTime();
-          if (!pulando && agora - ultimaVezPulou >= 900) {
-            cube.velocidade.y = 0.8;
+          if (!pulando && agora - ultimaVezPulou >= 1500) {
+            cube.velocidade.y = 0.01;
             pulando = true
             ultimaVezPulou = agora;
           }
